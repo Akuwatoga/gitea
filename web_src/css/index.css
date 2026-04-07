@@ -84,5 +84,6 @@
 @import "./actions.css";
 
 @import "./helpers.css";
+@import "./pixel-system.css";
 
 @tailwind utilities;
