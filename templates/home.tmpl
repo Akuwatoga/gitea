@@ -1,51 +1,234 @@
 {{template "base/head" .}}
-<div role="main" aria-label="{{if .IsSigned}}{{ctx.Locale.Tr "dashboard"}}{{else}}{{ctx.Locale.Tr "home_title"}}{{end}}" class="page-content home">
-	<div class="tw-mb-8 tw-px-8">
-		<div class="center">
-			<img class="logo" width="220" height="220" src="{{AssetUrlPrefix}}/img/logo.svg" alt="{{ctx.Locale.Tr "logo"}}">
-			<div class="hero">
-				<h1 class="ui icon header title tw-text-balance">
-					{{AppName}}
-				</h1>
-				<h2 class="tw-text-balance">{{ctx.Locale.Tr "startpage.app_desc"}}</h2>
+<div role="main" aria-label="{{ctx.Locale.Tr "home"}}" class="page-content home home--pixel">
+	<div class="pixel-home">
+		<div class="pixel-home__sky" aria-hidden="true">
+			<div class="pixel-home__sun"></div>
+			<div class="pixel-home__grid"></div>
+			<div class="pixel-home__stars">
+				<span></span>
+				<span></span>
+				<span></span>
+				<span></span>
+				<span></span>
+				<span></span>
 			</div>
 		</div>
-	</div>
-	<div class="ui stackable middle very relaxed page grid">
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-flame"}} {{ctx.Locale.Tr "startpage.install"}}
-			</h1>
-			<p class="large tw-text-balance">
-				{{ctx.Locale.Tr "startpage.install_desc" "https://docs.gitea.com/installation/install-from-binary" "https://github.com/go-gitea/gitea/tree/master/docker" "https://docs.gitea.com/installation/install-from-package"}}
-			</p>
-		</div>
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-device-desktop"}} {{ctx.Locale.Tr "startpage.platform"}}
-			</h1>
-			<p class="large tw-text-balance">
-				{{ctx.Locale.Tr "startpage.platform_desc" "https://go.dev/"}}
-			</p>
-		</div>
-	</div>
-	<div class="ui stackable middle very relaxed page grid">
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-rocket"}} {{ctx.Locale.Tr "startpage.lightweight"}}
-			</h1>
-			<p class="large tw-text-balance">
-				{{ctx.Locale.Tr "startpage.lightweight_desc"}}
-			</p>
-		</div>
-		<div class="eight wide center column">
-			<h1 class="hero ui icon header">
-				{{svg "octicon-code"}} {{ctx.Locale.Tr "startpage.license"}}
-			</h1>
-			<p class="large tw-text-balance">
-				{{ctx.Locale.Tr "startpage.license_desc" "https://code.gitea.io/gitea" "code.gitea.io/gitea" "https://github.com/go-gitea/gitea"}}
-			</p>
-		</div>
+
+		<section class="pixel-arcade">
+			<div class="pixel-arcade__intro">
+				<h1><span>Albert 的</span><span>Gitea</span></h1>
+				<div class="pixel-arcade__actions">
+					<a class="pixel-button pixel-button--primary" href="{{AppSubUrl}}/user/login">进入站点</a>
+					<a class="pixel-button" href="{{AppSubUrl}}/explore/repos">浏览仓库</a>
+				</div>
+			</div>
+
+			<div class="pixel-playground">
+				<div class="pixel-stage" id="pixel-stage" data-state="idle">
+					<div class="pixel-stage__hud">
+						<span class="pixel-stage__hud-label">CURRENT BRANCH</span>
+						<strong id="pixel-branch-label">feature/pixel-home</strong>
+					</div>
+
+					<div class="pixel-stage__nodes">
+						<div class="pixel-stage__node is-active" data-node="local">
+							<span class="pixel-stage__label">LOCAL</span>
+							<strong>write / commit</strong>
+						</div>
+						<div class="pixel-stage__node" data-node="git">
+							<span class="pixel-stage__label">GIT</span>
+							<strong>push / sync</strong>
+						</div>
+						<div class="pixel-stage__node" data-node="ecs">
+							<span class="pixel-stage__label">ECS</span>
+							<strong>build / deploy</strong>
+						</div>
+					</div>
+
+					<div class="pixel-stage__rail">
+						<div class="pixel-stage__cart" id="pixel-cart" aria-hidden="true">
+							<span></span>
+							<span></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="pixel-console">
+					<div class="pixel-console__header">
+						<span class="pixel-console__title">PUSH SIMULATOR</span>
+						<span class="pixel-console__status" id="pixel-console-status">IDLE</span>
+					</div>
+
+					<div class="pixel-console__meter" aria-hidden="true">
+						<span></span>
+						<span></span>
+						<span></span>
+					</div>
+
+					<h2 id="pixel-console-title">等待一次 push</h2>
+					<p id="pixel-console-text" aria-live="polite">
+						点一下下面的按钮，把一个像素 commit 从本地送进 Albert 的 Gitea，再触发 ECS 构建。
+					</p>
+
+					<div class="pixel-console__actions">
+						<button type="button" class="pixel-button pixel-button--primary" id="pixel-action-push">Push Commit</button>
+						<button type="button" class="pixel-mini-button" id="pixel-action-branch">切到 main</button>
+						<button type="button" class="pixel-mini-button" id="pixel-action-reset">重置</button>
+					</div>
+				</div>
+			</div>
+		</section>
 	</div>
 </div>
+
+<script>
+	window.addEventListener('DOMContentLoaded', () => {
+		const stage = document.getElementById('pixel-stage');
+		const branchLabel = document.getElementById('pixel-branch-label');
+		const status = document.getElementById('pixel-console-status');
+		const title = document.getElementById('pixel-console-title');
+		const text = document.getElementById('pixel-console-text');
+		const pushButton = document.getElementById('pixel-action-push');
+		const branchButton = document.getElementById('pixel-action-branch');
+		const resetButton = document.getElementById('pixel-action-reset');
+		const meters = Array.from(document.querySelectorAll('.pixel-console__meter span'));
+
+		if (!stage || !branchLabel || !status || !title || !text || !pushButton || !branchButton || !resetButton || !meters.length) return;
+
+		const nodes = {
+			local: stage.querySelector('[data-node="local"]'),
+			git: stage.querySelector('[data-node="git"]'),
+			ecs: stage.querySelector('[data-node="ecs"]'),
+		};
+
+		let branchMode = 'feature';
+		let timers = [];
+		let running = false;
+
+		const clearTimers = () => {
+			for (const timer of timers) window.clearTimeout(timer);
+			timers = [];
+		};
+
+		const flashText = () => {
+			text.classList.remove('is-flashing');
+			void text.offsetWidth;
+			text.classList.add('is-flashing');
+		};
+
+		const setConsole = (nextStatus, nextTitle, nextText) => {
+			status.textContent = nextStatus;
+			title.textContent = nextTitle;
+			text.textContent = nextText;
+			flashText();
+		};
+
+		const setActiveNode = (target) => {
+			for (const [key, element] of Object.entries(nodes)) {
+				if (!element) continue;
+				element.classList.toggle('is-active', key === target);
+			}
+		};
+
+		const setMeters = (count) => {
+			meters.forEach((meter, index) => meter.classList.toggle('is-on', index < count));
+		};
+
+		const updateBranchUi = () => {
+			const branchName = branchMode === 'feature' ? 'feature/pixel-home' : 'main';
+			branchLabel.textContent = branchName;
+			branchButton.textContent = branchMode === 'feature' ? '切到 main' : '切到 feature';
+			return branchName;
+		};
+
+		const resetPlayground = (withMessage = true) => {
+			clearTimers();
+			running = false;
+			pushButton.disabled = false;
+			pushButton.textContent = 'Push Commit';
+			stage.dataset.state = 'idle';
+			stage.style.setProperty('--cart-progress', '0');
+			setActiveNode('local');
+			setMeters(0);
+			const branchName = updateBranchUi();
+
+			if (withMessage) {
+				setConsole(
+					'IDLE',
+					'等待一次 push',
+					`当前分支是 ${branchName}。点一下按钮，看看 commit 如何经过 Git 并继续送去 ECS。`,
+				);
+			}
+		};
+
+		const schedule = (delay, callback) => {
+			timers.push(window.setTimeout(callback, delay));
+		};
+
+		pushButton.addEventListener('click', () => {
+			if (running) return;
+
+			const branchName = updateBranchUi();
+			running = true;
+			pushButton.disabled = true;
+			pushButton.textContent = 'Running';
+			stage.dataset.state = 'commit';
+			stage.style.setProperty('--cart-progress', '0.08');
+			setActiveNode('local');
+			setMeters(1);
+			setConsole('COMMIT', '本地 commit 已封装', `一枚像素 commit 正从 ${branchName} 出发，准备 push 到 Albert 的 Gitea。`);
+
+			schedule(1200, () => {
+				stage.dataset.state = 'git';
+				stage.style.setProperty('--cart-progress', '0.5');
+				setActiveNode('git');
+				setMeters(2);
+				setConsole('PUSH', 'git push 已进入仓库', '这里最重要的不是欢迎词，而是 Git 本身。仓库开始接收这次变更。');
+			});
+
+			schedule(2600, () => {
+				stage.dataset.state = 'ecs';
+				stage.style.setProperty('--cart-progress', '0.92');
+				setActiveNode('ecs');
+				setMeters(3);
+				setConsole('DEPLOY', 'ECS 正在 build', 'push 没有停在仓库里，变更继续向前，交给服务器构建和部署。');
+			});
+
+			schedule(4200, () => {
+				stage.dataset.state = 'done';
+				stage.style.setProperty('--cart-progress', '1');
+				setActiveNode('ecs');
+				setConsole('ONLINE', '部署完成', '这就是 Albert 的 Gitea: 自己维护，以 Git 为入口，再把变更送到 ECS。');
+				running = false;
+				pushButton.disabled = false;
+				pushButton.textContent = 'Push Again';
+			});
+		});
+
+		branchButton.addEventListener('click', () => {
+			if (running) return;
+			branchMode = branchMode === 'feature' ? 'main' : 'feature';
+			const branchName = updateBranchUi();
+			setConsole(
+				'BRANCH',
+				`已切换到 ${branchName}`,
+				branchMode === 'feature'
+					? '现在是偏开发态的分支，适合先做本地验证，再决定要不要继续推送。'
+					: '现在是更偏正式入口的主线分支，push 之后会更直接地代表线上版本。',
+			);
+			stage.dataset.state = 'idle';
+			stage.style.setProperty('--cart-progress', '0');
+			setActiveNode('local');
+			setMeters(0);
+		});
+
+		resetButton.addEventListener('click', () => {
+			resetPlayground(true);
+		});
+
+		resetPlayground(false);
+		updateBranchUi();
+		setConsole('IDLE', '等待一次 push', '点一下下面的按钮，把一个像素 commit 从本地送进 Albert 的 Gitea，再触发 ECS 构建。');
+	});
+</script>
 {{template "base/footer" .}}
